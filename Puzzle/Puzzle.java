@@ -252,7 +252,10 @@ public class Puzzle extends JPanel implements MouseListener {
 			mouseY = currMouseY;
 		}
 
-		// g.drawImage(image, 0, 0, null);
+		int scaledWidth = imageWidth * 200;
+		scaledWidth /= imageHeight;
+		g.drawImage(image, 0, 0, scaledWidth, 200, null);
+
 		for (int q = pieces.length - 1; q >= 0; q--) { // draw in reverse order
 			Piece c = pieces[q];
 //			for (int i = 0; i < c.width; i++) {
@@ -279,7 +282,7 @@ public class Puzzle extends JPanel implements MouseListener {
 		}
 		String timeDisplay = minutes + ":" + secondsDisplay;
 		g.setFont(new Font("helvetica", 20, 30));
-		g.drawString(timeDisplay, 100, 100);
+		g.drawString(timeDisplay, 100, 250);
 	}
 
 	/**
