@@ -61,27 +61,27 @@ public class Puzzle extends JPanel implements MouseListener {
 	/**
 	 * number of columns in puzzle
 	 */
-	final static int M = 12;
+	static int M;
 
 	/**
 	 * number of rows in puzzle
 	 */
-	final static int N = 10;
+	static int N;
 
 	/**
 	 * coordinates of start of each column
 	 */
-	int[] edgeWidths = new int[M + 1];
+	int[] edgeWidths;
 
 	/**
 	 * coordinates of start of each row
 	 */
-	int[] edgeHeights = new int[N + 1];
+	int[] edgeHeights;
 
 	/**
 	 * array of puzzle pieces
 	 */
-	Piece[] pieces = new Piece[M * N];
+	Piece[] pieces;
 
 	/**
 	 * margins of piece, for jigsaw thing idk what it's called
@@ -132,6 +132,13 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * puzzle constructor
 	 */
 	public Puzzle() {
+		loadImage();
+
+		addMouseListener(this);
+		setFocusable(true);
+	}
+
+	public void loadImage() {
 		try {
 			image = ImageIO.read(new File(imagePath));
 		} catch (IOException e) {
@@ -140,6 +147,13 @@ public class Puzzle extends JPanel implements MouseListener {
 		}
 		imageWidth = image.getWidth();
 		imageHeight = image.getHeight();
+
+		M = imageWidth / 90; // around 90 pixels
+		N = imageHeight / 60; // around 60 pixels
+
+		edgeWidths = new int[M + 1];
+		edgeHeights = new int[N + 1];
+		pieces = new Piece[M * N];
 
 		for (int i = 0; i <= M; i++) {
 			edgeWidths[i] = imageWidth * i / M;
@@ -203,9 +217,6 @@ public class Puzzle extends JPanel implements MouseListener {
 				pieces[i * N + j] = c;
 			}
 		}
-
-		addMouseListener(this);
-		setFocusable(true);
 	}
 
 	/**
@@ -251,11 +262,9 @@ public class Puzzle extends JPanel implements MouseListener {
 			mouseX = currMouseX;
 			mouseY = currMouseY;
 		}
-
 		int scaledWidth = imageWidth * 200;
 		scaledWidth /= imageHeight;
 		g.drawImage(image, 0, 0, scaledWidth, 200, null);
-
 		for (int q = pieces.length - 1; q >= 0; q--) { // draw in reverse order
 			Piece c = pieces[q];
 //			for (int i = 0; i < c.width; i++) {
@@ -282,7 +291,7 @@ public class Puzzle extends JPanel implements MouseListener {
 		}
 		String timeDisplay = minutes + ":" + secondsDisplay;
 		g.setFont(new Font("helvetica", 20, 30));
-		g.drawString(timeDisplay, 100, 250);
+		g.drawString(timeDisplay, 100, 240);
 	}
 
 	/**
