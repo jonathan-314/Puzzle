@@ -56,7 +56,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	/**
 	 * file path of image
 	 */
-	final String imagePath = "Images/image4.jpg";
+	final String imagePath = "Images/image7.jpg";
 
 	/**
 	 * number of columns in puzzle
@@ -114,12 +114,12 @@ public class Puzzle extends JPanel implements MouseListener {
 	final int tolerance = 10;
 
 	/**
-	 * starting time
+	 * starting time, used for timing
 	 */
 	long startTime;
 
 	/**
-	 * current time
+	 * current time, used for timing
 	 */
 	long currentTime;
 
@@ -127,6 +127,16 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * is the game over?
 	 */
 	boolean gameOver = false;
+
+	/**
+	 * connections between pieces; used for progress
+	 */
+	int totalConnections;
+
+	/**
+	 * how many connections currently; used for progress
+	 */
+	int currentConnections = 0;
 
 	/**
 	 * puzzle constructor
@@ -150,6 +160,8 @@ public class Puzzle extends JPanel implements MouseListener {
 
 		M = imageWidth / 90; // around 90 pixels
 		N = imageHeight / 60; // around 60 pixels
+
+		totalConnections = N * (M - 1) + M * (N - 1);
 
 		edgeWidths = new int[M + 1];
 		edgeHeights = new int[N + 1];
@@ -189,7 +201,7 @@ public class Puzzle extends JPanel implements MouseListener {
 				// TODO implement randomness for hole shape
 
 				int locationRandom = (int) (Math.random() * 2 * radius) - radius;
-				int radiusRandom = (int) ((1 - Math.random() * 0.5) * radius);
+				int radiusRandom = (int) ((1 - Math.random() * 0.4) * radius);
 
 				if (i != M - 1) {
 					Piece right = arrangedPieces[i + 1][j];
@@ -292,6 +304,9 @@ public class Puzzle extends JPanel implements MouseListener {
 		String timeDisplay = minutes + ":" + secondsDisplay;
 		g.setFont(new Font("helvetica", 20, 30));
 		g.drawString(timeDisplay, 100, 240);
+		double progress = currentConnections * 100.0d / totalConnections;
+		String progressDisplay = String.format("%.2f", progress) + "%";
+		g.drawString(progressDisplay, 100, 280);
 	}
 
 	/**
@@ -405,6 +420,19 @@ public class Puzzle extends JPanel implements MouseListener {
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		mousePressed = false;
+
+		int initialConnections = 0;
+		for (Piece c : pieces) {
+			if (!c.selected)
+				continue;
+			for (Piece n : c.neighbors) {
+				if (n == null)
+					continue;
+				if (find(c) == find(n)) {
+					initialConnections++;
+				}
+			}
+		}
 		for (Piece c : pieces) {
 			if (!c.selected)
 				continue;
@@ -429,8 +457,25 @@ public class Puzzle extends JPanel implements MouseListener {
 					merge(c, n);
 				}
 			}
+
+		}
+		int finalConnections = 0;
+		for (Piece c : pieces) {
+			if (!c.selected)
+				continue;
+			for (Piece n : c.neighbors) {
+				if (n == null)
+					continue;
+				if (find(c) == find(n)) {
+					finalConnections++;
+				}
+			}
+
 			c.selected = false;
 		}
+
+		currentConnections += (finalConnections - initialConnections);
+
 		testGameOver();
 	}
 
