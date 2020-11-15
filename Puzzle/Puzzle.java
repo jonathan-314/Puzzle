@@ -24,7 +24,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * puzzle instance
+	 * Puzzle instance
 	 */
 	public static Puzzle game;
 
@@ -56,7 +56,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	/**
 	 * file path of image
 	 */
-	final String imagePath = "Images/image7.jpg";
+	final static String imagePath = "Images/image7.jpg";
 
 	/**
 	 * number of columns in puzzle
@@ -141,16 +141,20 @@ public class Puzzle extends JPanel implements MouseListener {
 	/**
 	 * puzzle constructor
 	 */
-	public Puzzle() {
-		loadImage();
-
+	public Puzzle(String filePath) {
+		loadImage(filePath);
 		addMouseListener(this);
 		setFocusable(true);
 	}
 
-	public void loadImage() {
+	/**
+	 * loads an image
+	 * 
+	 * @param filePath path to image
+	 */
+	public void loadImage(String filePath) {
 		try {
-			image = ImageIO.read(new File(imagePath));
+			image = ImageIO.read(new File(filePath));
 		} catch (IOException e) {
 			System.out.println("file not found");
 			System.exit(ABORT);
@@ -161,12 +165,13 @@ public class Puzzle extends JPanel implements MouseListener {
 		M = imageWidth / 90; // around 90 pixels
 		N = imageHeight / 60; // around 60 pixels
 
+		System.out.println("Number of pieces: " + (M * N));
+
 		totalConnections = N * (M - 1) + M * (N - 1);
 
 		edgeWidths = new int[M + 1];
 		edgeHeights = new int[N + 1];
 		pieces = new Piece[M * N];
-
 		for (int i = 0; i <= M; i++) {
 			edgeWidths[i] = imageWidth * i / M;
 		}
@@ -207,23 +212,25 @@ public class Puzzle extends JPanel implements MouseListener {
 					Piece right = arrangedPieces[i + 1][j];
 					c.neighbors[1] = right;
 					right.neighbors[0] = c;
-					if (Math.random() < 0.5)
+					if (Math.random() < 0.5) {
 						transfer(radiusRandom, margin, right.height / 2 + locationRandom, right, c, c.width - margin,
 								c.height / 2 + locationRandom);
-					else
+					} else {
 						transfer(radiusRandom, c.width - margin, c.height / 2 + locationRandom, c, right, margin,
 								right.height / 2 + locationRandom);
+					}
 				}
 				if (j != N - 1) {
 					Piece down = arrangedPieces[i][j + 1];
 					c.neighbors[3] = down;
 					down.neighbors[2] = c;
-					if (Math.random() < 0.5)
+					if (Math.random() < 0.5) {
 						transfer(radiusRandom, down.width / 2 + locationRandom, margin, down, c,
 								c.width / 2 + locationRandom, c.height - margin);
-					else
+					} else {
 						transfer(radiusRandom, c.width / 2 + locationRandom, c.height - margin, c, down,
 								down.width / 2 + locationRandom, margin);
+					}
 				}
 				c.updateImage();
 				pieces[i * N + j] = c;
@@ -235,7 +242,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * initialize graphics
 	 */
 	public void init() {
-		JFrame jf = new JFrame("puzzle");
+		JFrame jf = new JFrame("Puzzle");
 		jf.setSize(getToolkit().getScreenSize().width, getToolkit().getScreenSize().height);
 		jf.add(this);
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -244,13 +251,14 @@ public class Puzzle extends JPanel implements MouseListener {
 		startTime = System.currentTimeMillis();
 
 		while (true) {
-			if (!gameOver)
+			if (!gameOver) { // only advance time while game is not over
 				currentTime = System.currentTimeMillis();
+			}
 			jf.repaint();
 			try {
-				Thread.sleep(77);
+				Thread.sleep(77); // ~13 fps!!
 			} catch (InterruptedException e) {
-				System.out.println("interrupted");
+				System.out.println("interrupted exception");
 			}
 		}
 	}
@@ -260,16 +268,19 @@ public class Puzzle extends JPanel implements MouseListener {
 	 */
 	@Override
 	public void paint(Graphics g) {
+		g.setColor(Color.BLACK);
+		g.fillRect(0, 0, screenWidth, screenHeight);
+		
 		if (mousePressed) {
 			int currMouseX = MouseInfo.getPointerInfo().getLocation().x;
 			int currMouseY = MouseInfo.getPointerInfo().getLocation().y - 44;
 			int moveX = currMouseX - mouseX;
 			int moveY = currMouseY - mouseY;
 			for (Piece c : pieces) {
-				if (!c.selected)
-					continue;
-				c.x += moveX;
-				c.y += moveY;
+				if (c.selected) {
+					c.x += moveX;
+					c.y += moveY;
+				}
 			}
 			mouseX = currMouseX;
 			mouseY = currMouseY;
@@ -281,8 +292,9 @@ public class Puzzle extends JPanel implements MouseListener {
 			Piece c = pieces[q];
 //			for (int i = 0; i < c.width; i++) {
 //				for (int j = 0; j < c.height; j++) {
-//					if (c.picture[i][j] == -1)
+//					if (c.picture[i][j] == -1) {
 //						continue;
+//					}
 //					g.setColor(new Color(c.picture[i][j]));
 //					g.fillRect(i + c.x, j + c.y, 1, 1);
 //				}
@@ -290,7 +302,7 @@ public class Puzzle extends JPanel implements MouseListener {
 			g.drawImage(c.pic, c.x, c.y, null);
 		}
 
-		g.setColor(Color.BLACK);
+		g.setColor(Color.YELLOW);
 		g.drawOval(screenWidth / 2 - 50, 8, 15, 15);
 		g.drawString("C", screenWidth / 2 - 47, 20);
 		g.drawString("Jonathan Guo", screenWidth / 2 - 30, 20);
@@ -320,15 +332,17 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * @param cx2    center x of destination region
 	 * @param cy2    center y of destination region
 	 */
-	public void transfer(int radius, int cx, int cy, Piece from, Piece to, int cx2, int cy2) {
+	private void transfer(int radius, int cx, int cy, Piece from, Piece to, int cx2, int cy2) {
 		for (int i = -radius; i <= radius; i++) {
 			for (int j = -radius; j <= radius; j++) {
-				if (i * i + j * j > radius * radius)
+				if (i * i + j * j > radius * radius) {
 					continue;
+				}
 				int x = i + cx;
 				int y = j + cy;
-				if (from.picture[x][y] == -1)
+				if (from.picture[x][y] == -1) {
 					continue; // ignore transparent pixels
+				}
 				to.picture[cx2 + i][cy2 + j] = from.picture[x][y];
 				from.picture[x][y] = -1;
 			}
@@ -336,7 +350,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	}
 
 	/**
-	 * tests to see if the game is over
+	 * tests to see if the game is over and ends game if it is
 	 */
 	public void testGameOver() {
 		boolean testGameOver = true;
@@ -366,7 +380,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * @param a piece 1
 	 * @param b piece 2
 	 */
-	public void merge(Piece a, Piece b) {
+	private void merge(Piece a, Piece b) {
 		pieces[find(a)].parent = find(b);
 	}
 
@@ -376,7 +390,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * @param o piece
 	 * @return
 	 */
-	public int find(Piece o) {
+	private int find(Piece o) {
 		if (o.parent != o.id) {
 			o.parent = find(pieces[o.parent]);
 		}
@@ -389,7 +403,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		game = new Puzzle();
+		game = new Puzzle(imagePath);
 		game.init();
 	}
 
@@ -411,7 +425,7 @@ public class Puzzle extends JPanel implements MouseListener {
 							d.selected = true; // select all pieces linked to c
 						}
 					}
-					break; // only select one region
+					break; // only select one piece
 				}
 			}
 		}
@@ -421,26 +435,17 @@ public class Puzzle extends JPanel implements MouseListener {
 	public void mouseReleased(MouseEvent e) {
 		mousePressed = false;
 
-		int initialConnections = 0;
 		for (Piece c : pieces) {
-			if (!c.selected)
+			if (!c.selected) {
 				continue;
-			for (Piece n : c.neighbors) {
-				if (n == null)
-					continue;
-				if (find(c) == find(n)) {
-					initialConnections++;
-				}
 			}
-		}
-		for (Piece c : pieces) {
-			if (!c.selected)
-				continue;
 			for (Piece n : c.neighbors) {
-				if (n == null)
+				if (n == null) {
 					continue;
-				if (find(c) == find(n))
+				}
+				if (find(c) == find(n)) { // already connected!
 					continue;
+				}
 				int diffX = n.x - c.x;
 				int diffY = n.y - c.y;
 				int targetX = edgeWidths[n.row] - edgeWidths[c.row];
@@ -449,32 +454,30 @@ public class Puzzle extends JPanel implements MouseListener {
 				int errorY = targetY - diffY;
 				if (Math.abs(errorX) <= tolerance && Math.abs(errorY) <= tolerance) {
 					for (Piece d : pieces) {
-						if (find(d) != find(n))
-							continue;
-						d.x += errorX;
-						d.y += errorY;
+						if (find(d) == find(n)) {
+							d.x += errorX;
+							d.y += errorY;
+						}
 					}
-					merge(c, n);
+					merge(c, n); // connect them
 				}
 			}
 
 		}
 		int finalConnections = 0;
 		for (Piece c : pieces) {
-			if (!c.selected)
-				continue;
 			for (Piece n : c.neighbors) {
-				if (n == null)
+				if (n == null) {
 					continue;
+				}
 				if (find(c) == find(n)) {
 					finalConnections++;
 				}
 			}
-
 			c.selected = false;
 		}
 
-		currentConnections += (finalConnections - initialConnections);
+		currentConnections = finalConnections / 2; // double counting!
 
 		testGameOver();
 	}
