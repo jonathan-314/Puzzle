@@ -39,7 +39,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	int screenHeight = getToolkit().getScreenSize().height;
 
 	/**
-	 * image
+	 * the image of the puzzle
 	 */
 	BufferedImage image;
 
@@ -107,6 +107,17 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * is the mouse pressed?
 	 */
 	boolean mousePressed = false;
+
+	/**
+	 * select multiple Pieces at once!!
+	 * <p>
+	 * WARNING: WORK IN PROGRESS
+	 * </p>
+	 */
+	int multiSelect = 0;
+
+	int multiStartX;
+	int multiStartY;
 
 	/**
 	 * tolerance for connecting pieces together
@@ -271,10 +282,19 @@ public class Puzzle extends JPanel implements MouseListener {
 	public void paint(Graphics g) {
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 0, screenWidth, screenHeight);
+		int currMouseX = MouseInfo.getPointerInfo().getLocation().x;
+		int currMouseY = MouseInfo.getPointerInfo().getLocation().y - 44;
 
-		if (mousePressed) {
-			int currMouseX = MouseInfo.getPointerInfo().getLocation().x;
-			int currMouseY = MouseInfo.getPointerInfo().getLocation().y - 44;
+		if (multiSelect == 1) {
+			g.setColor(Color.DARK_GRAY);
+			int upperLeftX = Math.min(multiStartX, currMouseX);
+			int upperLeftY = Math.min(multiStartY, currMouseY);
+			int selectWidth = multiStartX + currMouseX - 2 * upperLeftX;
+			int selectHeight = multiStartY + currMouseY - 2 * upperLeftY;
+			g.fillRect(upperLeftX, upperLeftY, selectWidth, selectHeight);
+		}
+
+		if (mousePressed && multiSelect != 1) {
 			int moveX = currMouseX - mouseX;
 			int moveY = currMouseY - mouseY;
 			for (Piece c : pieces) {
@@ -300,6 +320,7 @@ public class Puzzle extends JPanel implements MouseListener {
 //					g.fillRect(i + c.x, j + c.y, 1, 1);
 //				}
 //			}
+
 			g.drawImage(c.pic, c.x, c.y, null);
 		}
 
@@ -399,6 +420,42 @@ public class Puzzle extends JPanel implements MouseListener {
 	}
 
 	/**
+	 * overlap function
+	 * <p>
+	 * calculates if two rectangles overlap
+	 * </p>
+	 * 
+	 * @param rect1 rectangle 1 [upper left x, upper left y, lower right x, lower
+	 *              right y]
+	 * @param rect2 rectangle 2 [upper left x, upper left y, lower right x, lower
+	 *              right y]
+	 * @return if the two rectangles overlap
+	 */
+	private boolean overlap(int[] rect1, int[] rect2) {
+		if (between2(rect1[0], rect2[0], rect2[2]) || between2(rect2[0], rect1[0], rect1[2])) {
+			if (between2(rect1[1], rect2[1], rect2[3]) || between2(rect2[1], rect1[1], rect1[3])) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * between function v2
+	 * <p>
+	 * calculates if value is between the bounds (no designation for lower / upper)
+	 * </p>
+	 * 
+	 * @param val    value
+	 * @param bound1 bound 1
+	 * @param bound2 bound 2
+	 * @return if value is between the bounds
+	 */
+	private boolean between2(int val, int bound1, int bound2) {
+		return between(val, bound1, bound2) || between(val, bound2, bound1);
+	}
+
+	/**
 	 * between function
 	 * <p>
 	 * calculates if value is between lower bound (inclusive) and upper bound
@@ -433,11 +490,19 @@ public class Puzzle extends JPanel implements MouseListener {
 		mousePressed = true;
 		mouseX = e.getX();
 		mouseY = e.getY();
+
+		if (multiSelect == 2) {
+			multiSelect = 3;
+			return;
+		}
+
+		boolean successfulSelect = false;
 		for (Piece c : pieces) {
 			if (between(mouseX, c.x, c.x + c.width)) {
 				if (between(mouseY, c.y, c.y + c.height)) { // within the dimensions of the piece
-					if (c.picture[mouseX - c.x][mouseY - c.y] != -1) { // selected a non transparent pixel
+					if (c.picture[mouseX - c.x][mouseY - c.y] != -1) { // clicked on a non transparent pixel
 						c.selected = true;
+						successfulSelect = true;
 						for (Piece d : pieces) {
 							if (find(c) == find(d)) {
 								d.selected = true; // select all pieces linked to c
@@ -448,11 +513,56 @@ public class Puzzle extends JPanel implements MouseListener {
 				}
 			}
 		}
+		if (!successfulSelect && multiSelect == 0) {
+			multiSelect = 1;
+			multiStartX = mouseX;
+			multiStartY = mouseY;
+		}
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		mousePressed = false;
+
+		if (multiSelect == 1) {
+			int total = 0;
+			int upperLeftX = Math.min(multiStartX, e.getX());
+			int upperLeftY = Math.min(multiStartY, e.getY());
+			int lowerRightX = Math.max(multiStartX, e.getX());
+			int lowerRightY = Math.max(multiStartY, e.getY());
+			for (Piece c : pieces) {
+//				if (between(c.x + margin, upperLeftX, lowerRightX)
+//						|| between(c.x + c.width - margin, upperLeftX, lowerRightX)) {
+//					if (between(c.y + margin, upperLeftY, lowerRightY)
+//							|| between(c.y + c.height - margin, upperLeftY, lowerRightY)) {
+				if (true) {
+					if (overlap(new int[] { upperLeftX, upperLeftY, lowerRightX, lowerRightY }, new int[] {
+							c.x + margin, c.y + margin, c.x + c.width - margin, c.y + c.height - margin })) {
+						if (c.selected) {
+							continue; // already selected!
+						}
+						c.selected = true;
+						total += 1;
+						for (Piece d : pieces) {
+							if (find(d) == find(c)) {
+								d.selected = true;
+							}
+						}
+					}
+				}
+			}
+			multiSelect = 2;
+			if (total == 0) {
+				multiSelect = 0;
+			}
+			return;
+		}
+
+		if (multiSelect == 2) {
+			for (Piece c : pieces) {
+				c.selected = false;
+			}
+		}
 
 		for (Piece c : pieces) {
 			if (!c.selected) {
@@ -490,6 +600,8 @@ public class Puzzle extends JPanel implements MouseListener {
 			}
 
 		}
+
+		multiSelect = 0;
 
 		// calculating number of connections
 		int finalConnections = 0;
