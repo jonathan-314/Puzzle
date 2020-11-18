@@ -172,6 +172,7 @@ public class Puzzle extends JPanel implements MouseListener {
 		edgeWidths = new int[M + 1];
 		edgeHeights = new int[N + 1];
 		pieces = new Piece[M * N];
+
 		for (int i = 0; i <= M; i++) {
 			edgeWidths[i] = imageWidth * i / M;
 		}
@@ -186,7 +187,7 @@ public class Puzzle extends JPanel implements MouseListener {
 				int pieceHeight = edgeHeights[j + 1] - edgeHeights[j];
 				int[][] picture = new int[margin + pieceWidth + margin][margin + pieceHeight + margin];
 				for (int q = 0; q < picture.length; q++) {
-					Arrays.fill(picture[q], -1);
+					Arrays.fill(picture[q], -1); // transparent
 				}
 				for (int x = 0; x < pieceWidth; x++) {
 					for (int y = 0; y < pieceHeight; y++) {
@@ -270,7 +271,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	public void paint(Graphics g) {
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 0, screenWidth, screenHeight);
-		
+
 		if (mousePressed) {
 			int currMouseX = MouseInfo.getPointerInfo().getLocation().x;
 			int currMouseY = MouseInfo.getPointerInfo().getLocation().y - 44;
@@ -322,29 +323,29 @@ public class Puzzle extends JPanel implements MouseListener {
 	}
 
 	/**
-	 * transfers pixels from one piece to another
+	 * transfers pixels from one Piece to another
 	 * 
-	 * @param radius radius of region to be transfered
-	 * @param cx     center x of source region
-	 * @param cy     center y of source region
-	 * @param from   from piece
-	 * @param to     to piece
-	 * @param cx2    center x of destination region
-	 * @param cy2    center y of destination region
+	 * @param radius      radius of region to be transfered
+	 * @param cx          center x of source region
+	 * @param cy          center y of source region
+	 * @param destination destination piece
+	 * @param source      source piece
+	 * @param cx2         center x of destination region
+	 * @param cy2         center y of destination region
 	 */
-	private void transfer(int radius, int cx, int cy, Piece from, Piece to, int cx2, int cy2) {
+	private void transfer(int radius, int cx, int cy, Piece destination, Piece source, int cx2, int cy2) {
 		for (int i = -radius; i <= radius; i++) {
 			for (int j = -radius; j <= radius; j++) {
-				if (i * i + j * j > radius * radius) {
+				if (i * i + j * j > radius * radius) { // outside circle
 					continue;
 				}
 				int x = i + cx;
 				int y = j + cy;
-				if (from.picture[x][y] == -1) {
+				if (destination.picture[x][y] == -1) {
 					continue; // ignore transparent pixels
 				}
-				to.picture[cx2 + i][cy2 + j] = from.picture[x][y];
-				from.picture[x][y] = -1;
+				source.picture[cx2 + i][cy2 + j] = destination.picture[x][y];
+				destination.picture[x][y] = -1;
 			}
 		}
 	}
@@ -353,14 +354,14 @@ public class Puzzle extends JPanel implements MouseListener {
 	 * tests to see if the game is over and ends game if it is
 	 */
 	public void testGameOver() {
-		boolean testGameOver = true;
+		boolean isGameOver = true;
 		for (Piece c : pieces) {
-			if (find(c) != find(pieces[0])) {
-				testGameOver = false;
+			if (find(c) != find(pieces[0])) { // not all connected
+				isGameOver = false;
 				break;
 			}
 		}
-		if (testGameOver) {
+		if (isGameOver) {
 			endGame();
 		}
 	}
@@ -398,6 +399,22 @@ public class Puzzle extends JPanel implements MouseListener {
 	}
 
 	/**
+	 * between function
+	 * <p>
+	 * calculates if value is between lower bound (inclusive) and upper bound
+	 * (exclusive)
+	 * </p>
+	 * 
+	 * @param val        value
+	 * @param lowerBound lower bound
+	 * @param upperBound upper bound
+	 * @return if value is between lower bound and upper bound
+	 */
+	private boolean between(int val, int lowerBound, int upperBound) {
+		return lowerBound <= val && val < upperBound;
+	}
+
+	/**
 	 * Main method
 	 * 
 	 * @param args
@@ -417,15 +434,17 @@ public class Puzzle extends JPanel implements MouseListener {
 		mouseX = e.getX();
 		mouseY = e.getY();
 		for (Piece c : pieces) {
-			if (c.x + margin <= mouseX && mouseX <= c.x + c.width - margin) {
-				if (c.y + margin <= mouseY && mouseY <= c.y + c.height - margin) {
-					c.selected = true;
-					for (Piece d : pieces) {
-						if (find(c) == find(d)) {
-							d.selected = true; // select all pieces linked to c
+			if (between(mouseX, c.x, c.x + c.width)) {
+				if (between(mouseY, c.y, c.y + c.height)) { // within the dimensions of the piece
+					if (c.picture[mouseX - c.x][mouseY - c.y] != -1) { // selected a non transparent pixel
+						c.selected = true;
+						for (Piece d : pieces) {
+							if (find(c) == find(d)) {
+								d.selected = true; // select all pieces linked to c
+							}
 						}
+						break; // only select one piece
 					}
-					break; // only select one piece
 				}
 			}
 		}
@@ -440,21 +459,28 @@ public class Puzzle extends JPanel implements MouseListener {
 				continue;
 			}
 			for (Piece n : c.neighbors) {
-				if (n == null) {
+				if (n == null) { // no neighbor, occurs if this Piece is on an edge / corner
 					continue;
 				}
 				if (find(c) == find(n)) { // already connected!
 					continue;
 				}
+
+				// vector between neighbor and this Piece
 				int diffX = n.x - c.x;
 				int diffY = n.y - c.y;
+
+				// target vector between neighbor and this Piece
 				int targetX = edgeWidths[n.row] - edgeWidths[c.row];
 				int targetY = edgeHeights[n.col] - edgeHeights[c.col];
+
+				// error vector (target - actual)
 				int errorX = targetX - diffX;
 				int errorY = targetY - diffY;
-				if (Math.abs(errorX) <= tolerance && Math.abs(errorY) <= tolerance) {
+				if (Math.abs(errorX) <= tolerance && Math.abs(errorY) <= tolerance) { // error within tolerance
 					for (Piece d : pieces) {
 						if (find(d) == find(n)) {
+							// move all pieces connected to neighbor by error vector
 							d.x += errorX;
 							d.y += errorY;
 						}
@@ -464,6 +490,8 @@ public class Puzzle extends JPanel implements MouseListener {
 			}
 
 		}
+
+		// calculating number of connections
 		int finalConnections = 0;
 		for (Piece c : pieces) {
 			for (Piece n : c.neighbors) {
@@ -479,7 +507,7 @@ public class Puzzle extends JPanel implements MouseListener {
 
 		currentConnections = finalConnections / 2; // double counting!
 
-		testGameOver();
+		testGameOver(); // test to see if the game is over
 	}
 
 	@Override
