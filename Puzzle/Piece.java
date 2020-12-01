@@ -58,7 +58,8 @@ class Piece {
 	/**
 	 * parent of piece, union find
 	 */
-	int parent;
+	Piece parent;
+	// int parent;
 
 	/**
 	 * has the user selected this piece
@@ -75,7 +76,8 @@ class Piece {
 		this.id = id;
 		row = this.id / Puzzle.N;
 		col = this.id % Puzzle.N;
-		this.parent = id;
+		this.parent = null;
+		// this.parent = id;
 		picture = pict;
 		width = picture.length;
 		height = picture[0].length;

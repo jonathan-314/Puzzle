@@ -397,26 +397,27 @@ public class Puzzle extends JPanel implements MouseListener {
 	}
 
 	/**
-	 * merges to pieces, union find
+	 * merges two pieces, union find
 	 * 
 	 * @param a piece 1
 	 * @param b piece 2
 	 */
 	private void merge(Piece a, Piece b) {
-		pieces[find(a)].parent = find(b);
+		find(a).parent = find(b);
 	}
 
 	/**
 	 * finds the parent of a piece, union find
 	 * 
 	 * @param o piece
-	 * @return
+	 * @return parent of o
 	 */
-	private int find(Piece o) {
-		if (o.parent != o.id) {
-			o.parent = find(pieces[o.parent]);
+	private Piece find(Piece o) {
+		if (o.parent != null) {
+			o.parent = find(o.parent);
+			return o.parent;
 		}
-		return o.parent;
+		return o;
 	}
 
 	/**
