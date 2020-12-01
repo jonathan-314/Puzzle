@@ -10,6 +10,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -79,9 +81,9 @@ public class Puzzle extends JPanel implements MouseListener {
 	int[] edgeHeights;
 
 	/**
-	 * array of puzzle pieces
+	 * list of puzzle pieces
 	 */
-	Piece[] pieces;
+	LinkedList<Piece> pieces = new LinkedList<Piece>();
 
 	/**
 	 * margins of piece, for jigsaw thing idk what it's called
@@ -182,7 +184,6 @@ public class Puzzle extends JPanel implements MouseListener {
 
 		edgeWidths = new int[M + 1];
 		edgeHeights = new int[N + 1];
-		pieces = new Piece[M * N];
 
 		for (int i = 0; i <= M; i++) {
 			edgeWidths[i] = imageWidth * i / M;
@@ -245,7 +246,8 @@ public class Puzzle extends JPanel implements MouseListener {
 					}
 				}
 				c.updateImage();
-				pieces[i * N + j] = c;
+
+				pieces.add(c);
 			}
 		}
 	}
@@ -309,8 +311,11 @@ public class Puzzle extends JPanel implements MouseListener {
 		int scaledWidth = imageWidth * 200;
 		scaledWidth /= imageHeight;
 		g.drawImage(image, 0, 0, scaledWidth, 200, null);
-		for (int q = pieces.length - 1; q >= 0; q--) { // draw in reverse order
-			Piece c = pieces[q];
+
+		// draw in reverse order
+		Iterator<Piece> reverse = pieces.descendingIterator();
+		while (reverse.hasNext()) { // reverse order
+			Piece c = reverse.next();
 //			for (int i = 0; i < c.width; i++) {
 //				for (int j = 0; j < c.height; j++) {
 //					if (c.picture[i][j] == -1) {
@@ -377,7 +382,7 @@ public class Puzzle extends JPanel implements MouseListener {
 	public void testGameOver() {
 		boolean isGameOver = true;
 		for (Piece c : pieces) {
-			if (find(c) != find(pieces[0])) { // not all connected
+			if (find(c) != find(pieces.getFirst())) { // not all connected
 				isGameOver = false;
 				break;
 			}
@@ -473,6 +478,22 @@ public class Puzzle extends JPanel implements MouseListener {
 	}
 
 	/**
+	 * Moves selected pieces to the front
+	 */
+	private void moveToFront() {
+		LinkedList<Piece> selectedPieces = new LinkedList<Piece>();
+		for (Piece c : pieces) {
+			if (c.selected) {
+				selectedPieces.addFirst(c);
+			}
+		}
+		for (Piece c : selectedPieces) {
+			pieces.remove(c);
+			pieces.addFirst(c);
+		}
+	}
+
+	/**
 	 * Main method
 	 * 
 	 * @param args
@@ -498,6 +519,7 @@ public class Puzzle extends JPanel implements MouseListener {
 		}
 
 		boolean successfulSelect = false;
+
 		for (Piece c : pieces) {
 			if (between(mouseX, c.x, c.x + c.width)) {
 				if (between(mouseY, c.y, c.y + c.height)) { // within the dimensions of the piece
@@ -515,6 +537,9 @@ public class Puzzle extends JPanel implements MouseListener {
 				}
 			}
 		}
+
+		moveToFront();
+
 		if (!successfulSelect && multiSelect == 0) {
 			multiSelect = 1;
 			multiStartX = mouseX;
@@ -533,26 +558,23 @@ public class Puzzle extends JPanel implements MouseListener {
 			int lowerRightX = Math.max(multiStartX, e.getX());
 			int lowerRightY = Math.max(multiStartY, e.getY());
 			for (Piece c : pieces) {
-//				if (between(c.x + margin, upperLeftX, lowerRightX)
-//						|| between(c.x + c.width - margin, upperLeftX, lowerRightX)) {
-//					if (between(c.y + margin, upperLeftY, lowerRightY)
-//							|| between(c.y + c.height - margin, upperLeftY, lowerRightY)) {
-				if (true) {
-					if (overlap(new int[] { upperLeftX, upperLeftY, lowerRightX, lowerRightY }, new int[] {
-							c.x + margin, c.y + margin, c.x + c.width - margin, c.y + c.height - margin })) {
-						if (c.selected) {
-							continue; // already selected!
-						}
-						c.selected = true;
-						total += 1;
-						for (Piece d : pieces) {
-							if (find(d) == find(c)) {
-								d.selected = true;
-							}
+				if (overlap(new int[] { upperLeftX, upperLeftY, lowerRightX, lowerRightY },
+						new int[] { c.x + margin, c.y + margin, c.x + c.width - margin, c.y + c.height - margin })) {
+					if (c.selected) {
+						continue; // already selected!
+					}
+					c.selected = true;
+					total += 1;
+					for (Piece d : pieces) {
+						if (find(d) == find(c)) {
+							d.selected = true;
 						}
 					}
 				}
 			}
+
+			moveToFront();
+
 			multiSelect = 2;
 			if (total == 0) {
 				multiSelect = 0;
