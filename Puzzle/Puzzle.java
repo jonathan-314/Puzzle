@@ -222,8 +222,8 @@ public class Puzzle extends JPanel implements MouseListener {
 
 				if (i != M - 1) {
 					Piece right = arrangedPieces[i + 1][j];
-					c.neighbors[1] = right;
-					right.neighbors[0] = c;
+					c.neighbors.add(right);
+					right.neighbors.add(c);
 					if (Math.random() < 0.5) {
 						transfer(radiusRandom, margin, right.height / 2 + locationRandom, right, c, c.width - margin,
 								c.height / 2 + locationRandom);
@@ -234,8 +234,8 @@ public class Puzzle extends JPanel implements MouseListener {
 				}
 				if (j != N - 1) {
 					Piece down = arrangedPieces[i][j + 1];
-					c.neighbors[3] = down;
-					down.neighbors[2] = c;
+					c.neighbors.add(down);
+					down.neighbors.add(c);
 					if (Math.random() < 0.5) {
 						transfer(radiusRandom, down.width / 2 + locationRandom, margin, down, c,
 								c.width / 2 + locationRandom, c.height - margin);
@@ -502,6 +502,7 @@ public class Puzzle extends JPanel implements MouseListener {
 				if (between(mouseY, c.y, c.y + c.height)) { // within the dimensions of the piece
 					if (c.picture[mouseX - c.x][mouseY - c.y] != -1) { // clicked on a non transparent pixel
 						c.selected = true;
+
 						successfulSelect = true;
 						for (Piece d : pieces) {
 							if (find(c) == find(d)) {
@@ -569,9 +570,6 @@ public class Puzzle extends JPanel implements MouseListener {
 				continue;
 			}
 			for (Piece n : c.neighbors) {
-				if (n == null) { // no neighbor, occurs if this Piece is on an edge / corner
-					continue;
-				}
 				if (find(c) == find(n)) { // already connected!
 					continue;
 				}
@@ -607,9 +605,6 @@ public class Puzzle extends JPanel implements MouseListener {
 		int finalConnections = 0;
 		for (Piece c : pieces) {
 			for (Piece n : c.neighbors) {
-				if (n == null) {
-					continue;
-				}
 				if (find(c) == find(n)) {
 					finalConnections++;
 				}

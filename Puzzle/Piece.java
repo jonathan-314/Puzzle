@@ -1,6 +1,7 @@
 package Puzzle;
 
 import java.awt.image.BufferedImage;
+import java.util.LinkedList;
 
 class Piece {
 
@@ -50,9 +51,9 @@ class Piece {
 	int height;
 
 	/**
-	 * neighbors of this piece: left right up down
+	 * neighbors of this piece
 	 */
-	Piece[] neighbors = new Piece[4];
+	LinkedList<Piece> neighbors = new LinkedList<Piece>();
 
 	/**
 	 * parent of piece, union find
@@ -98,5 +99,13 @@ class Piece {
 	@Override
 	public int hashCode() {
 		return id; // useless, but what if it's not
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof Piece) {
+			return ((Piece) o).id == this.id;
+		}
+		return false;
 	}
 }
