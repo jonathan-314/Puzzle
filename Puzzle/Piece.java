@@ -66,6 +66,21 @@ class Piece {
 	boolean selected = false;
 
 	/**
+	 * image used to draw border
+	 */
+	BufferedImage border;
+
+	private final static int[] DX = { 0, 1, 0, -1 };
+	private final static int[] DY = { 1, 0, -1, 0 };
+
+	/**
+	 * border width (4 pixels)
+	 */
+	private final static int BORDER_WIDTH = 4;
+
+	private final static int BORDER_COLOR = 256 * 256 * 256 * 255 + 256 * 256 * 50 + 256 * 100 + 255;
+
+	/**
 	 * piece constructor
 	 * 
 	 * @param id   unique id
@@ -80,6 +95,7 @@ class Piece {
 		width = picture.length;
 		height = picture[0].length;
 		pic = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		border = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 	}
 
 	/**
@@ -94,6 +110,45 @@ class Piece {
 				pic.setRGB(i, j, picture[i][j]);
 			}
 		}
+
+		updateBorder();
+	}
+
+	public void updateBorder() {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				if (picture[i][j] == -1) {
+					continue; // transparent
+				}
+
+				// only consider boundary points
+				boolean boundary = false;
+				for (int k = 0; k < 4; k++) {
+					if (picture[i + DX[k]][j + DY[k]] == -1) {
+						boundary = true;
+					}
+				}
+				if (!boundary) {
+					continue;
+				}
+
+				for (int k = -BORDER_WIDTH; k <= BORDER_WIDTH; k++) {
+					for (int l = -BORDER_WIDTH; l <= BORDER_WIDTH; l++) {
+						if (i + k < 0 || i + k >= width || j + l < 0 || j + l >= height) {
+							continue;
+						}
+//						if (k * k + l * l <= 1) {
+//							border.setRGB(i + k, j + l, 10);
+//						} else {
+//							if (border.getRGB(i + k, j + l) != 10) {
+//								border.setRGB(i + k, j + l, BORDER_COLOR);
+//							}
+//						}
+						border.setRGB(i + k, j + l, BORDER_COLOR);
+					}
+				}
+			}
+		}
 	}
 
 	@Override
@@ -103,9 +158,6 @@ class Piece {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o instanceof Piece) {
-			return ((Piece) o).id == this.id;
-		}
-		return false;
+		return (o instanceof Piece) && (((Piece) o).id == this.id);
 	}
 }

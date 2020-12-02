@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -152,6 +153,11 @@ public class Puzzle extends JPanel implements MouseListener {
 	int currentConnections = 0;
 
 	/**
+	 * Random instance
+	 */
+	Random r = new Random();
+
+	/**
 	 * puzzle constructor
 	 */
 	public Puzzle(String filePath) {
@@ -193,6 +199,7 @@ public class Puzzle extends JPanel implements MouseListener {
 		}
 
 		Piece[][] arrangedPieces = new Piece[M][N];
+		Piece[] randomizedPieces = new Piece[M * N];
 		for (int i = 0; i < M; i++) {
 			for (int j = 0; j < N; j++) {
 				int pieceWidth = edgeWidths[i + 1] - edgeWidths[i];
@@ -246,10 +253,19 @@ public class Puzzle extends JPanel implements MouseListener {
 					}
 				}
 				c.updateImage();
+				randomizedPieces[i * N + j] = c;
 
-				pieces.add(c);
 			}
 		}
+
+		for (int i = M * N; i > 0; i--) {
+			int randIndex = r.nextInt(i);
+			Piece swap = randomizedPieces[randIndex];
+			randomizedPieces[randIndex] = randomizedPieces[i - 1];
+			randomizedPieces[i - 1] = swap;
+			pieces.add(swap);
+		}
+
 	}
 
 	/**
@@ -312,6 +328,8 @@ public class Puzzle extends JPanel implements MouseListener {
 		scaledWidth /= imageHeight;
 		g.drawImage(image, 0, 0, scaledWidth, 200, null);
 
+		LinkedList<Piece> reversedPieces = new LinkedList<Piece>();
+
 		// draw in reverse order
 		Iterator<Piece> reverse = pieces.descendingIterator();
 		while (reverse.hasNext()) { // reverse order
@@ -326,6 +344,22 @@ public class Puzzle extends JPanel implements MouseListener {
 //				}
 //			}
 
+//			if (c.selected) {
+//				g.drawImage(c.border, c.x, c.y, null);
+//			}
+			if (c.selected) { // skip selected pieces
+				reversedPieces.addLast(c);
+				continue;
+			}
+			g.drawImage(c.pic, c.x, c.y, null);
+		}
+
+		// now draw selected pieces
+		for (Piece c : reversedPieces) {
+			g.drawImage(c.border, c.x, c.y, null);
+		}
+
+		for (Piece c : reversedPieces) {
 			g.drawImage(c.pic, c.x, c.y, null);
 		}
 
